@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+    <id>Show categories(name and link with breadcrumbs) in alphabetical order on product page - v2.0</id>
+    <version>1</version>
+    <vqmver>2.3.2</vqmver>
+    <author>Andrei Bogdan (andrei.opencart@yahoo.com)</author>
+	<file name="catalog/controller/product/product.php">
+		<operation>
+			<search position="after"><![CDATA[$product_info = $this->model_catalog_product->getProduct($product_id);]]></search>
+			<add><![CDATA[
+				$this->data['text_category'] = $this->language->get('text_category');
+				$querycats = $this->model_catalog_product->getCategories($product_id);
+				$categories = array();
+				foreach( $querycats as $item ) {
+					$categ = $this->model_catalog_category->getCategory($item['category_id']); //print_r($categ);
+					$catinfo['id'] = $item['category_id'];
+					if( $categ['parent_id'] ) {
+						$catinfo['href'] = $this->url->link('product/category', 'path=' . $item['category_id'] . '_' . $categ['parent_id']);
+					} else {
+						$catinfo['href'] = $this->url->link('product/category', 'path=' . $item['category_id']);
+					}
+					$catinfo['name'] = $categ['name'];
+					$categories[] = $catinfo;
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[$this->data['manufacturer'] = $product_info['manufacturer'];]]></search>
+			<add><![CDATA[
+				$this->data['categories'] = $categories;
+			]]></add>
+		</operation>
+	</file>
+	<file name="catalog/language/english/product/product.php">
+		<operation>
+			<search position="after"><![CDATA[$_['text_manufacturer'] = 'Brand:';]]></search>
+			<add><![CDATA[
+				$_['text_category'] = 'Categories:';
+			]]></add>
+		</operation>
+	</file>
+	<file name="catalog/view/theme/default/template/product/product.tpl">
+		<operation>
+			<search position="after" offset="1"><![CDATA[<span><?php echo $text_manufacturer; ?></span> <a href="<?php echo $manufacturers; ?>"><?php echo $manufacturer; ?></a><br />]]></search>
+			<add><![CDATA[
+			<?php if( $categories ): ?>
+			<?php
+			function aasort (&$array, $key) {
+				$sorter=array();
+				$ret=array();
+				reset($array);
+				foreach ($array as $ii => $va) {
+					$sorter[$ii]=$va[$key];
+				}
+				asort($sorter);
+				foreach ($sorter as $ii => $va) {
+					$ret[$ii]=$array[$ii];
+				}
+				$array=$ret;
+			}
+
+			aasort($categories,"name");
+			?>
+				<span><?php echo $text_category; ?></span>
+				<?php foreach( $categories as $category ): ?>
+					<a href="<?php echo $category['href']; ?>"><?php echo $category['name']; ?></a>&nbsp;
+				<?php endforeach; ?>
+				<br />
+			<?php endif; ?>
+			]]></add>
+		</operation>
+	</file>
+</modification>
